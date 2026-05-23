@@ -13,11 +13,12 @@ CREATE TABLE IF NOT EXISTS events (
     collected_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     data JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_source_date (source, published_date),
-    INDEX idx_severity (severity),
-    INDEX idx_event_type (event_type)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_source_date ON events (source, published_date);
+CREATE INDEX IF NOT EXISTS idx_severity ON events (severity);
+CREATE INDEX IF NOT EXISTS idx_event_type ON events (event_type);
 
 -- Event clusters: Group related events together
 CREATE TABLE IF NOT EXISTS event_clusters (
@@ -26,9 +27,10 @@ CREATE TABLE IF NOT EXISTS event_clusters (
     description TEXT,
     event_ids INTEGER[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_cluster_name (cluster_name)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_cluster_name ON event_clusters (cluster_name);
 
 -- Users table: User account management
 CREATE TABLE IF NOT EXISTS users (
@@ -39,9 +41,10 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) DEFAULT 'viewer',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    INDEX idx_email (email)
+    last_login TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_email ON users (email);
 
 -- User preferences: Store user-specific settings
 CREATE TABLE IF NOT EXISTS user_preferences (
@@ -70,9 +73,11 @@ CREATE TABLE IF NOT EXISTS collection_tasks (
     error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_source_status (source, status),
-    INDEX idx_next_run (next_run_date)
+    UNIQUE(task_name, source)
 );
+
+CREATE INDEX IF NOT EXISTS idx_source_status ON collection_tasks (source, status);
+CREATE INDEX IF NOT EXISTS idx_next_run ON collection_tasks (next_run_date);
 
 -- Notifications: Store notification records
 CREATE TABLE IF NOT EXISTS notifications (
@@ -82,17 +87,19 @@ CREATE TABLE IF NOT EXISTS notifications (
     notification_type VARCHAR(50),
     is_read BOOLEAN DEFAULT FALSE,
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    read_at TIMESTAMP,
-    INDEX idx_user_unread (user_id, is_read),
-    INDEX idx_sent_date (sent_at)
+    read_at TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_unread ON notifications (user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_sent_date ON notifications (sent_at);
 
 -- Event tags: For flexible categorization
 CREATE TABLE IF NOT EXISTS event_tags (
     id SERIAL PRIMARY KEY,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     tag_name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_tag_name (tag_name),
-    INDEX idx_event_id (event_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_tag_name ON event_tags (tag_name);
+CREATE INDEX IF NOT EXISTS idx_tag_event ON event_tags (event_id);

@@ -26,7 +26,8 @@
     "axios": "^1.6.2",
     "body-parser": "^1.20.2",
     "winston": "^3.11.0",
-    "joi": "^17.11.0"
+    "joi": "^17.11.0",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
