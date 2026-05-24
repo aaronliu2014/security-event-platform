@@ -66,12 +66,12 @@ function NewsSidebar({ trendingTags, stats, loading, onTagClick }) {
         <List
           size="small"
           dataSource={[
-            { name: 'TheHackersNews', desc: 'General security news' },
-            { name: 'BleepingComputer', desc: 'Security & tech news' },
-            { name: 'TheRecord', desc: 'Cyber threat intelligence' },
-            { name: 'EmbraceTheRed', desc: 'AI red teaming & security' },
-            { name: 'SimonWillison', desc: 'AI & software security' },
-            { name: 'NVD / CISA', desc: 'Vulnerability databases' },
+            { name: 'NVD', desc: 'National Vulnerability Database' },
+            { name: 'CISA', desc: 'Known Exploited Vulnerabilities' },
+            { name: 'KrebsOnSecurity', desc: 'Investigative security journalism' },
+            { name: 'DarkReading', desc: 'Cybersecurity news & analysis' },
+            { name: 'SchneierOnSecurity', desc: 'Security & technology analysis' },
+            { name: 'SimonWillison', desc: 'AI & software engineering' },
           ]}
           renderItem={(item) => (
             <List.Item style={{ padding: '4px 0', border: 'none' }}>

@@ -5,9 +5,9 @@ const migrations = [
   {
     name: 'add_news_columns',
     sql: [
-      `ALTER TABLE events ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(1000)`,
-      `ALTER TABLE events ADD COLUMN IF NOT EXISTS ai_relevance_score FLOAT DEFAULT 0`,
-      `ALTER TABLE events ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64)`,
+      `ALTER TABLE events ADD COLUMN thumbnail_url VARCHAR(1000)`,
+      `ALTER TABLE events ADD COLUMN ai_relevance_score FLOAT DEFAULT 0`,
+      `ALTER TABLE events ADD COLUMN content_hash VARCHAR(64)`,
     ],
   },
   {
@@ -21,7 +21,7 @@ const migrations = [
   {
     name: 'add_event_tags_unique',
     sql: [
-      `ALTER TABLE event_tags ADD CONSTRAINT IF NOT EXISTS uq_event_tag UNIQUE (event_id, tag_name)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_event_tag_unique ON event_tags (event_id, tag_name)`,
     ],
   },
 ];
@@ -34,13 +34,12 @@ export async function runMigrations() {
       try {
         await pool.query(sql);
       } catch (error) {
-        // SQLite doesn't support IF NOT EXISTS on ALTER TABLE, ignore duplicate column errors
         if (
           error.message.includes('duplicate column') ||
           error.message.includes('already exists') ||
           error.message.includes('Duplicate column')
         ) {
-          logger.info(`Migration ${migration.name}: column already exists, skipping`);
+          logger.info(`Migration ${migration.name}: already applied, skipping`);
           continue;
         }
         logger.warn(`Migration ${migration.name} warning: ${error.message}`);

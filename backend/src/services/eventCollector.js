@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import logger from '../utils/logger.js';
 
 const NVD_API_BASE = 'https://services.nvd.nist.gov/rest/json/cves/2.0';
-const CISA_API_BASE = 'https://raw.githubusercontent.com/cisagov/cisa-known-exploited-vulnerabilities-catalog/main/known_exploited_vulnerabilities.json';
+const CISA_API_BASE = 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
 
 const RATE_LIMIT_DELAY = 1000;
 
@@ -11,13 +11,12 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // News feed configuration: each feed preserves its own source identity
 const NEWS_FEEDS = [
-  // General security (existing)
-  { url: 'https://feeds.feedburner.com/TheHackersNews', source: 'TheHackersNews', category: 'general' },
-  { url: 'https://www.bleepingcomputer.com/feed/', source: 'BleepingComputer', category: 'general' },
-  { url: 'https://therecord.media/feed/', source: 'TheRecord', category: 'general' },
-  // AI Security
-  { url: 'https://embracethered.com/feed/', source: 'EmbraceTheRed', category: 'ai-security' },
-  { url: 'https://simonwillison.net/tags/ai/atom.xml', source: 'SimonWillison', category: 'ai-security' },
+  // General security news
+  { url: 'https://krebsonsecurity.com/feed/', source: 'KrebsOnSecurity', category: 'general' },
+  { url: 'https://www.darkreading.com/rss.xml', source: 'DarkReading', category: 'general' },
+  { url: 'https://www.schneier.com/feed/atom/', source: 'SchneierOnSecurity', category: 'general' },
+  // AI / tech security
+  { url: 'https://simonwillison.net/atom/everything/', source: 'SimonWillison', category: 'ai-security' },
 ];
 
 /**

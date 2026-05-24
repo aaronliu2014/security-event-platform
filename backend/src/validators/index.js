@@ -3,7 +3,7 @@ import logger from '../utils/logger.js';
 
 const validFrequencies = ['hourly', 'daily', 'weekly', 'monthly', 'early-morning'];
 const validSeverities = ['critical', 'high', 'medium', 'low', 'info'];
-const validSources = ['NVD', 'CISA', 'TheHackersNews', 'BleepingComputer', 'TheRecord', 'EmbraceTheRed', 'SimonWillison'];
+const validSources = ['NVD', 'CISA', 'KrebsOnSecurity', 'DarkReading', 'SchneierOnSecurity', 'SimonWillison'];
 const validSortColumns = ['published_date', 'collected_date', 'severity', 'title'];
 const validSortOrders = ['ASC', 'DESC'];
 

@@ -9,3 +9,4 @@ build/
 .vscode/
 coverage/
 logs/
+backend/data/

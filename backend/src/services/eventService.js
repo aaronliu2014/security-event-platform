@@ -252,6 +252,24 @@ export async function updateCollectionTask(taskName, source, status, stats = {})
 }
 
 /**
+ * Get events by their external_ids.
+ */
+export async function getEventsByExternalIds(externalIds) {
+  if (!externalIds || externalIds.length === 0) return [];
+  try {
+    const placeholders = externalIds.map((_, i) => `$${i + 1}`).join(',');
+    const result = await pool.query(
+      `SELECT id, external_id FROM events WHERE external_id IN (${placeholders})`,
+      externalIds
+    );
+    return result.rows || [];
+  } catch (error) {
+    logger.error(`Error fetching events by external ids: ${error.message}`);
+    return [];
+  }
+}
+
+/**
  * Save tags for an event into the event_tags table.
  */
 export async function saveEventTags(eventId, tags) {
@@ -281,5 +299,6 @@ export default {
   getEventStats,
   getEventsBySource,
   updateCollectionTask,
+  getEventsByExternalIds,
   saveEventTags,
 };

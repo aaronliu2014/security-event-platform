@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import logger from '../utils/logger.js';
 import { collectAllEvents } from '../services/eventCollector.js';
-import { saveEvents, updateCollectionTask, saveEventTags } from '../services/eventService.js';
+import { saveEvents, updateCollectionTask, saveEventTags, getEventsByExternalIds } from '../services/eventService.js';
 import { getTopicConfig } from '../services/aiTaggingService.js';
 
 const tasks = new Map();
@@ -43,7 +43,7 @@ async function saveAITags(eventId, tags) {
 /**
  * Execute data collection task.
  */
-async function executeCollectionTask() {
+export async function executeCollectionTask() {
   try {
     logger.info('Starting scheduled data collection task');
     const startTime = Date.now();
@@ -62,8 +62,14 @@ async function executeCollectionTask() {
     const aiNewsItems = results.rss.filter((e) => e._tags && e._tags.length > 0);
     if (aiNewsItems.length > 0) {
       logger.info(`Saving AI tags for ${aiNewsItems.length} articles`);
-      // We need the saved event IDs - for simplicity, tag during save
-      // The tags are saved via saveEventTags called from saveEvents result
+      const aiExternalIds = aiNewsItems.map((e) => e.external_id);
+      const savedEvents = await getEventsByExternalIds(aiExternalIds);
+      for (const event of savedEvents) {
+        const rssItem = aiNewsItems.find((e) => e.external_id === event.external_id);
+        if (rssItem && rssItem._tags) {
+          await saveAITags(event.id, rssItem._tags);
+        }
+      }
     }
 
     const totalSaved = saveResults.reduce((sum, r) => sum + r.saved, 0);
