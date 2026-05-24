@@ -8,6 +8,7 @@ import logger from './utils/logger.js';
 import { config } from './config/index.js';
 import * as collectionScheduler from './tasks/collectionScheduler.js';
 import * as userModel from './models/User.js';
+import { runMigrations } from './utils/migrations.js';
 import { initWebSocket } from './utils/websocket.js';
 
 // Import routes
@@ -16,6 +17,7 @@ import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import analysisRoutes from './routes/analysis.js';
+import newsRoutes from './routes/news.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger.js';
 
@@ -90,6 +92,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/analysis', analysisRoutes);
+app.use('/api/news', newsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -124,9 +127,16 @@ server.listen(PORT, async () => {
     logger.error(`Failed to initialize user tables: ${error.message}`);
   }
 
+  // Run migrations
+  try {
+    await runMigrations();
+  } catch (error) {
+    logger.error(`Failed to run migrations: ${error.message}`);
+  }
+
   // Initialize data collection scheduler
   try {
-    const collectionFrequency = process.env.COLLECTION_FREQUENCY || 'daily';
+    const collectionFrequency = process.env.COLLECTION_FREQUENCY || 'early-morning';
     logger.info(`Initializing collection scheduler with frequency: ${collectionFrequency}`);
     collectionScheduler.scheduleCollectionTask(collectionFrequency);
     logger.info('Data collection scheduler initialized successfully');

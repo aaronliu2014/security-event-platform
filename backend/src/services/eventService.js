@@ -21,11 +21,13 @@ export async function saveEvents(events, source) {
     try {
       const result = await pool.query(
         `INSERT INTO events (
-          external_id, title, description, source, source_url, 
-          event_type, severity, affected_products, published_date, data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          external_id, title, description, source, source_url,
+          event_type, severity, affected_products, published_date,
+          thumbnail_url, ai_relevance_score, content_hash, data
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         ON CONFLICT (external_id) DO UPDATE SET
           last_updated = CURRENT_TIMESTAMP,
+          ai_relevance_score = EXCLUDED.ai_relevance_score,
           data = EXCLUDED.data
         RETURNING id`,
         [
@@ -38,6 +40,9 @@ export async function saveEvents(events, source) {
           event.severity,
           event.affected_products,
           event.published_date,
+          event.thumbnail_url || null,
+          event.ai_relevance_score || 0,
+          event.content_hash || null,
           JSON.stringify(event.data || {}),
         ]
       );
@@ -246,6 +251,28 @@ export async function updateCollectionTask(taskName, source, status, stats = {})
   }
 }
 
+/**
+ * Save tags for an event into the event_tags table.
+ */
+export async function saveEventTags(eventId, tags) {
+  if (!tags || tags.length === 0) return { saved: 0 };
+
+  let saved = 0;
+  for (const tag of tags) {
+    try {
+      await pool.query(
+        `INSERT INTO event_tags (event_id, tag_name) VALUES ($1, $2)
+         ON CONFLICT (event_id, tag_name) DO NOTHING`,
+        [eventId, tag]
+      );
+      saved++;
+    } catch {
+      // duplicate tag, skip
+    }
+  }
+  return { saved };
+}
+
 export default {
   saveEvents,
   getEvents,
@@ -254,4 +281,5 @@ export default {
   getEventStats,
   getEventsBySource,
   updateCollectionTask,
+  saveEventTags,
 };

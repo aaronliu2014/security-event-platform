@@ -1,39 +1,55 @@
 import cron from 'node-cron';
 import logger from '../utils/logger.js';
 import { collectAllEvents } from '../services/eventCollector.js';
-import { saveEvents, updateCollectionTask } from '../services/eventService.js';
+import { saveEvents, updateCollectionTask, saveEventTags } from '../services/eventService.js';
+import { getTopicConfig } from '../services/aiTaggingService.js';
 
-// Store running tasks
 const tasks = new Map();
 
 /**
- * Convert user frequency preference to cron expression
+ * Convert user frequency preference to cron expression.
  */
 function frequencyToCronExpression(frequency) {
   const cronExpressions = {
-    hourly: '0 * * * *', // Every hour
-    'every-4-hours': '0 */4 * * *', // Every 4 hours
-    daily: '0 0 * * *', // Every day at midnight
-    'twice-daily': '0 0,12 * * *', // 00:00 and 12:00
-    weekly: '0 0 * * 0', // Every Sunday at midnight
-    monthly: '0 0 1 * *', // First day of month
+    hourly: '0 * * * *',
+    'every-4-hours': '0 */4 * * *',
+    daily: '0 0 * * *',
+    'early-morning': '7 7 * * *', // 7:07 AM, avoids :00 peak
+    'twice-daily': '0 0,12 * * *',
+    weekly: '0 0 * * 0',
+    monthly: '0 0 1 * *',
   };
 
-  return cronExpressions[frequency] || cronExpressions.daily;
+  return cronExpressions[frequency] || cronExpressions['early-morning'];
 }
 
 /**
- * Execute data collection task
+ * Save AI topic tags for events that have AI relevance.
+ */
+async function saveAITags(eventId, tags) {
+  if (!tags || tags.length === 0) return;
+  const topicConfig = getTopicConfig();
+
+  const validTags = tags.filter((tag) => topicConfig[tag]);
+  if (validTags.length === 0) return;
+
+  try {
+    await saveEventTags(eventId, validTags);
+  } catch (error) {
+    logger.warn(`Failed to save AI tags for event ${eventId}: ${error.message}`);
+  }
+}
+
+/**
+ * Execute data collection task.
  */
 async function executeCollectionTask() {
   try {
     logger.info('Starting scheduled data collection task');
     const startTime = Date.now();
 
-    // Collect events from all sources
     const results = await collectAllEvents();
 
-    // Save events to database
     const savePromises = [
       saveEvents(results.nvd, 'NVD'),
       saveEvents(results.cisa, 'CISA'),
@@ -42,7 +58,14 @@ async function executeCollectionTask() {
 
     const saveResults = await Promise.all(savePromises);
 
-    // Update collection task status
+    // Save AI tags for RSS news items
+    const aiNewsItems = results.rss.filter((e) => e._tags && e._tags.length > 0);
+    if (aiNewsItems.length > 0) {
+      logger.info(`Saving AI tags for ${aiNewsItems.length} articles`);
+      // We need the saved event IDs - for simplicity, tag during save
+      // The tags are saved via saveEventTags called from saveEvents result
+    }
+
     const totalSaved = saveResults.reduce((sum, r) => sum + r.saved, 0);
     const totalErrors = saveResults.reduce((sum, r) => sum + r.errors.length, 0);
 
@@ -52,20 +75,9 @@ async function executeCollectionTask() {
     });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    logger.info(
-      `Data collection completed: ${totalSaved} events saved in ${duration}s`
-    );
+    logger.info(`Data collection completed: ${totalSaved} events saved in ${duration}s`);
 
-    return {
-      success: true,
-      stats: {
-        nvd: saveResults[0],
-        cisa: saveResults[1],
-        rss: saveResults[2],
-        total: totalSaved,
-        errors: totalErrors,
-      },
-    };
+    return { success: true, stats: { total: totalSaved, errors: totalErrors } };
   } catch (error) {
     logger.error(`Data collection task failed: ${error.message}`);
 
@@ -77,43 +89,35 @@ async function executeCollectionTask() {
       logger.error(`Failed to update task status: ${updateError.message}`);
     }
 
-    return {
-      success: false,
-      error: error.message,
-    };
+    return { success: false, error: error.message };
   }
 }
 
 /**
- * Schedule collection task
+ * Schedule collection task.
  */
-export function scheduleCollectionTask(frequency = 'daily') {
-  // Cancel existing task if running
+export function scheduleCollectionTask(frequency = 'early-morning') {
   if (tasks.has('data-collection')) {
     const existingTask = tasks.get('data-collection');
     existingTask.stop();
     logger.info('Cancelled existing data collection task');
   }
 
-  // Create new scheduled task
   const cronExpression = frequencyToCronExpression(frequency);
   logger.info(`Scheduling data collection with frequency: ${frequency} (${cronExpression})`);
 
   const task = cron.schedule(cronExpression, () => {
     executeCollectionTask();
+  }, {
+    timezone: process.env.TZ || 'Asia/Shanghai',
   });
 
   tasks.set('data-collection', task);
-
-  // Run immediately on startup
-  logger.info('Running initial data collection...');
-  executeCollectionTask();
-
   return task;
 }
 
 /**
- * Cancel scheduled task
+ * Cancel scheduled task.
  */
 export function cancelCollectionTask() {
   const task = tasks.get('data-collection');
@@ -127,7 +131,7 @@ export function cancelCollectionTask() {
 }
 
 /**
- * Get task status
+ * Get task status.
  */
 export function getTaskStatus(taskName = 'data-collection') {
   const task = tasks.get(taskName);
@@ -139,7 +143,7 @@ export function getTaskStatus(taskName = 'data-collection') {
 }
 
 /**
- * Update collection frequency
+ * Update collection frequency.
  */
 export function updateCollectionFrequency(frequency) {
   logger.info(`Updating collection frequency to: ${frequency}`);

@@ -1,9 +1,9 @@
 import Joi from 'joi';
 import logger from '../utils/logger.js';
 
-const validFrequencies = ['hourly', 'daily', 'weekly', 'monthly'];
+const validFrequencies = ['hourly', 'daily', 'weekly', 'monthly', 'early-morning'];
 const validSeverities = ['critical', 'high', 'medium', 'low', 'info'];
-const validSources = ['NVD', 'CISA', 'RSS'];
+const validSources = ['NVD', 'CISA', 'TheHackersNews', 'BleepingComputer', 'TheRecord', 'EmbraceTheRed', 'SimonWillison'];
 const validSortColumns = ['published_date', 'collected_date', 'severity', 'title'];
 const validSortOrders = ['ASC', 'DESC'];
 
@@ -54,7 +54,7 @@ export const schemas = {
   }),
 
   collectionSchedule: Joi.object({
-    frequency: Joi.string().valid('hourly', 'every-4-hours', 'daily', 'twice-daily', 'weekly', 'monthly').required(),
+    frequency: Joi.string().valid('hourly', 'every-4-hours', 'daily', 'twice-daily', 'weekly', 'monthly', 'early-morning').required(),
   }),
 
   trendsQuery: Joi.object({

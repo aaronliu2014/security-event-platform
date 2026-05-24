@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Layout, Menu, Badge, Button, Space, Typography, Tag } from 'antd';
 import {
-  DashboardOutlined, FileTextOutlined, SettingOutlined,
+  HomeOutlined, DashboardOutlined, FileTextOutlined, SettingOutlined,
   BarChartOutlined, BellOutlined, LogoutOutlined, UserOutlined,
   LoginOutlined, UserAddOutlined,
 } from '@ant-design/icons';
@@ -24,14 +24,19 @@ function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/dashboard');
+    navigate('/');
   };
 
   const menuItems = [
     {
-      key: '/dashboard',
+      key: '/',
+      icon: <HomeOutlined />,
+      label: 'Home',
+    },
+    {
+      key: '/stats',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: 'Stats',
     },
     {
       key: '/events',
@@ -79,7 +84,7 @@ function Sidebar() {
         fontSize: '16px', textAlign: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.1)',
       }}>
-        Security Events
+        AI Security Intel
       </div>
 
       {!isAuthenticated && (

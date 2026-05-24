@@ -63,4 +63,11 @@ export const notificationService = {
   deleteNotification: (id) => apiClient.delete(`/users/notifications/${id}`),
 };
 
+export const newsService = {
+  getNews: (params) => apiClient.get('/news', { params }),
+  getFeatured: (params) => apiClient.get('/news/featured', { params }),
+  getTrendingTags: (params) => apiClient.get('/news/tags', { params }),
+  searchNews: (params) => apiClient.get('/news/search', { params }),
+};
+
 export default apiClient;

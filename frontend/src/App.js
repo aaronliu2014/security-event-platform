@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout, Spin } from 'antd';
+import { Layout } from 'antd';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import HomePage from './pages/HomePage';
 import EventList from './pages/EventList';
 import Analysis from './pages/Analysis';
 import Notifications from './pages/Notifications';
@@ -20,8 +21,8 @@ function AppLayout() {
       <Layout style={{ marginLeft: 200 }}>
         <Layout.Content style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/stats" element={<Dashboard />} />
             <Route path="/events" element={<EventList />} />
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/notifications" element={
@@ -52,8 +53,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+        <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
         <Route path="/*" element={<AppLayout />} />
       </Routes>
     </Router>

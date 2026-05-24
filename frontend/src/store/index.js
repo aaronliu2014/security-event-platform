@@ -116,6 +116,23 @@ export const usePreferencesStore = create((set) => ({
   },
 }));
 
+export const useNewsStore = create((set) => ({
+  featuredArticles: [],
+  articles: [],
+  trendingTags: [],
+  loading: false,
+  error: null,
+  total: 0,
+  filters: { tag: null, source: null, page: 1 },
+
+  setFeatured: (featuredArticles) => set({ featuredArticles }),
+  setArticles: (articles, total) => set({ articles, total }),
+  setTrendingTags: (trendingTags) => set({ trendingTags }),
+  setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
+  setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
+}));
+
 export const useNotificationStore = create((set) => ({
   notifications: [],
   unreadCount: 0,

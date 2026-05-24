@@ -13,12 +13,18 @@ CREATE TABLE IF NOT EXISTS events (
     collected_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     data JSONB,
+    thumbnail_url VARCHAR(1000),
+    ai_relevance_score FLOAT DEFAULT 0,
+    content_hash VARCHAR(64),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_source_date ON events (source, published_date);
 CREATE INDEX IF NOT EXISTS idx_severity ON events (severity);
 CREATE INDEX IF NOT EXISTS idx_event_type ON events (event_type);
+CREATE INDEX IF NOT EXISTS idx_ai_relevance ON events (ai_relevance_score DESC);
+CREATE INDEX IF NOT EXISTS idx_event_type_date ON events (event_type, published_date DESC);
+CREATE INDEX IF NOT EXISTS idx_content_hash ON events (content_hash);
 
 -- Event clusters: Group related events together
 CREATE TABLE IF NOT EXISTS event_clusters (
@@ -103,3 +109,4 @@ CREATE TABLE IF NOT EXISTS event_tags (
 
 CREATE INDEX IF NOT EXISTS idx_tag_name ON event_tags (tag_name);
 CREATE INDEX IF NOT EXISTS idx_tag_event ON event_tags (event_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_event_tag_unique ON event_tags (event_id, tag_name);

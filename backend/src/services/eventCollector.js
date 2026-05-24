@@ -1,23 +1,71 @@
 import axios from 'axios';
+import crypto from 'crypto';
 import logger from '../utils/logger.js';
 
 const NVD_API_BASE = 'https://services.nvd.nist.gov/rest/json/cves/2.0';
 const CISA_API_BASE = 'https://raw.githubusercontent.com/cisagov/cisa-known-exploited-vulnerabilities-catalog/main/known_exploited_vulnerabilities.json';
 
-// Rate limiting to avoid API throttling
-const RATE_LIMIT_DELAY = 1000; // 1 second between requests
+const RATE_LIMIT_DELAY = 1000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// News feed configuration: each feed preserves its own source identity
+const NEWS_FEEDS = [
+  // General security (existing)
+  { url: 'https://feeds.feedburner.com/TheHackersNews', source: 'TheHackersNews', category: 'general' },
+  { url: 'https://www.bleepingcomputer.com/feed/', source: 'BleepingComputer', category: 'general' },
+  { url: 'https://therecord.media/feed/', source: 'TheRecord', category: 'general' },
+  // AI Security
+  { url: 'https://embracethered.com/feed/', source: 'EmbraceTheRed', category: 'ai-security' },
+  { url: 'https://simonwillison.net/tags/ai/atom.xml', source: 'SimonWillison', category: 'ai-security' },
+];
+
+/**
+ * Compute a content hash for deduplication across feeds.
+ */
+function computeContentHash(title, url) {
+  const normalized = `${(title || '').toLowerCase().trim().slice(0, 200)}|${(url || '').toLowerCase().trim()}`;
+  return crypto.createHash('sha256').update(normalized).digest('hex').substring(0, 64);
+}
+
+/**
+ * Extract thumbnail URL from RSS feed item metadata.
+ */
+function extractThumbnail(item) {
+  if (item.mediaContent && item.mediaContent.$ && item.mediaContent.$.url) {
+    return item.mediaContent.$.url;
+  }
+  if (item.mediaThumbnail && item.mediaThumbnail.$ && item.mediaThumbnail.$.url) {
+    return item.mediaThumbnail.$.url;
+  }
+  if (item.enclosure && item.enclosure.url) {
+    return item.enclosure.url;
+  }
+  return null;
+}
 
 /**
  * Normalize NVD vulnerability to standard event format
  */
 function normalizeNVDEvent(vuln) {
   const cveData = vuln.cve;
-  const cvssScores = cveData.metrics?.cvssV3 || cveData.metrics?.cvssV2 || [];
-  const maxScore = cvssScores.reduce((max, metric) => {
-    return Math.max(max, metric.cvssData?.baseScore || 0);
-  }, 0);
+  const metrics = cveData.metrics?.cvssMetricV31 || cveData.metrics?.cvssMetricV30 || [];
+  const v2Metrics = cveData.metrics?.cvssMetricV2 || [];
+  const allMetrics = [...metrics, ...v2Metrics];
+
+  const cvssData = allMetrics[0]?.cvssData || allMetrics[0]?.cvssData;
+  let maxScore = 0;
+  for (const m of allMetrics) {
+    const s = m.cvssData?.baseScore || 0;
+    if (s > maxScore) maxScore = s;
+  }
+
+  if (maxScore === 0 && metrics.length > 0) {
+    maxScore = metrics[0].cvssData?.baseScore || 0;
+  }
+  if (maxScore === 0 && v2Metrics.length > 0) {
+    maxScore = v2Metrics[0].cvssData?.baseScore || 0;
+  }
 
   const severity = getSeverityLevel(maxScore);
 
@@ -33,7 +81,7 @@ function normalizeNVDEvent(vuln) {
     published_date: new Date(cveData.published),
     data: {
       cvss_score: maxScore,
-      cvss_vector: cvssScores[0]?.cvssData?.vectorString || null,
+      cvss_vector: allMetrics[0]?.cvssData?.vectorString || null,
       cwe_ids: cveData.weaknesses?.map((w) => w.description?.[0]?.value) || [],
     },
   };
@@ -44,7 +92,7 @@ function normalizeNVDEvent(vuln) {
  */
 function normalizeCISAEvent(vuln) {
   const dateAdded = new Date(vuln.dateAdded);
-  
+
   return {
     external_id: `CISA-${vuln.cveID}`,
     title: `${vuln.cveID} - ${vuln.vulnerabilityName}`,
@@ -103,16 +151,11 @@ function extractAffectedProducts(configurations) {
 export async function fetchNVDVulnerabilities(startIndex = 0, resultsPerPage = 100) {
   try {
     logger.info(`Fetching NVD vulnerabilities: start=${startIndex}, limit=${resultsPerPage}`);
-    
+
     const response = await axios.get(NVD_API_BASE, {
-      params: {
-        startIndex,
-        resultsPerPage,
-      },
+      params: { startIndex, resultsPerPage },
       timeout: 30000,
-      headers: {
-        'User-Agent': 'SecurityEventPlatform/1.0',
-      },
+      headers: { 'User-Agent': 'SecurityEventPlatform/1.0' },
     });
 
     const vulnerabilities = response.data.vulnerabilities || [];
@@ -136,12 +179,10 @@ export async function fetchNVDVulnerabilities(startIndex = 0, resultsPerPage = 1
 export async function fetchCISAExploitedVulnerabilities() {
   try {
     logger.info('Fetching CISA known exploited vulnerabilities');
-    
+
     const response = await axios.get(CISA_API_BASE, {
       timeout: 30000,
-      headers: {
-        'User-Agent': 'SecurityEventPlatform/1.0',
-      },
+      headers: { 'User-Agent': 'SecurityEventPlatform/1.0' },
     });
 
     const vulnerabilities = response.data.vulnerabilities || [];
@@ -156,50 +197,62 @@ export async function fetchCISAExploitedVulnerabilities() {
 }
 
 /**
- * Fetch security news from RSS feeds using rss-parser
+ * Fetch security news from RSS feeds. Each feed preserves its own source identity.
  */
 export async function fetchSecurityRSSFeeds() {
   try {
     logger.info('Fetching security RSS feeds');
     const Parser = (await import('rss-parser')).default;
-    const parser = new Parser();
-
-    const feeds = [
-      'https://feeds.feedburner.com/TheHackersNews',
-      'https://www.bleepingcomputer.com/feed/',
-      'https://therecord.media/feed/',
-    ];
+    const parser = new Parser({
+      customFields: {
+        item: [
+          ['media:content', 'mediaContent'],
+          ['media:thumbnail', 'mediaThumbnail'],
+          ['enclosure', 'enclosure'],
+        ],
+      },
+    });
 
     const events = [];
 
-    for (const feedUrl of feeds) {
+    for (const feedConfig of NEWS_FEEDS) {
       try {
-        const feed = await parser.parseURL(feedUrl);
-        logger.info(`RSS feed ${feedUrl}: ${feed.items?.length || 0} items`);
+        const feed = await parser.parseURL(feedConfig.url);
+        logger.info(`RSS feed ${feedConfig.source}: ${feed.items?.length || 0} items`);
 
-        const feedEvents = (feed.items || []).map((item) => ({
-          external_id: `RSS-${Buffer.from(item.link || item.guid || item.title).toString('base64').substring(0, 64)}`,
-          title: item.title || 'Untitled',
-          description: item.contentSnippet || item.content || item.summary || '',
-          source: 'RSS',
-          source_url: item.link || feedUrl,
-          event_type: 'news',
-          severity: detectRSSSeverity(item.title + ' ' + (item.contentSnippet || '')),
-          affected_products: [],
-          published_date: new Date(item.pubDate || item.isoDate || Date.now()),
-          data: {
-            feed_source: feed.title || feedUrl,
-            creator: item.creator,
-            categories: item.categories || [],
-          },
-        }));
+        const feedEvents = (feed.items || []).map((item) => {
+          const title = item.title || 'Untitled';
+          const link = item.link || item.guid || '';
+          const contentHash = computeContentHash(title, link);
+
+          return {
+            external_id: `RSS-${contentHash}`,
+            title,
+            description: item.contentSnippet || item.content || item.summary || '',
+            source: feedConfig.source,
+            source_url: link,
+            event_type: 'news',
+            severity: detectRSSSeverity(title + ' ' + (item.contentSnippet || '')),
+            affected_products: [],
+            published_date: new Date(item.pubDate || item.isoDate || Date.now()),
+            thumbnail_url: extractThumbnail(item),
+            content_hash: contentHash,
+            ai_relevance_score: 0,
+            data: {
+              feed_source: feed.title || feedConfig.source,
+              feed_category: feedConfig.category,
+              creator: item.creator,
+              categories: item.categories || [],
+            },
+          };
+        });
         events.push(...feedEvents);
       } catch (feedError) {
-        logger.error(`Failed to parse RSS feed ${feedUrl}: ${feedError.message}`);
+        logger.error(`Failed to parse RSS feed ${feedConfig.source}: ${feedError.message}`);
       }
     }
 
-    logger.info(`RSS feed collection completed: ${events.length} events from ${feeds.length} feeds`);
+    logger.info(`RSS feed collection completed: ${events.length} events from ${NEWS_FEEDS.length} feeds`);
     return events;
   } catch (error) {
     logger.error(`Failed to fetch RSS feeds: ${error.message}`);
@@ -220,6 +273,13 @@ function detectRSSSeverity(text) {
 }
 
 /**
+ * Get the news feed configurations.
+ */
+export function getNewsFeedConfigs() {
+  return NEWS_FEEDS;
+}
+
+/**
  * Main function to collect events from all sources
  */
 export async function collectAllEvents() {
@@ -234,7 +294,6 @@ export async function collectAllEvents() {
   };
 
   try {
-    // Fetch NVD (with rate limiting)
     try {
       logger.info('Starting NVD data collection');
       const nvdResult = await fetchNVDVulnerabilities(0, 100);
@@ -248,7 +307,6 @@ export async function collectAllEvents() {
 
     await sleep(RATE_LIMIT_DELAY);
 
-    // Fetch CISA (with rate limiting)
     try {
       logger.info('Starting CISA data collection');
       results.cisa = await fetchCISAExploitedVulnerabilities();
@@ -261,10 +319,20 @@ export async function collectAllEvents() {
 
     await sleep(RATE_LIMIT_DELAY);
 
-    // Fetch RSS feeds
     try {
       logger.info('Starting RSS feed collection');
       results.rss = await fetchSecurityRSSFeeds();
+
+      // Run AI tagging on RSS news items
+      try {
+        const { batchTagEvents: tagEvents } = await import('./aiTaggingService.js');
+        results.rss = tagEvents(results.rss);
+        const aiTagged = results.rss.filter((e) => e.ai_relevance_score > 0).length;
+        logger.info(`AI tagging: ${aiTagged}/${results.rss.length} articles matched AI topics`);
+      } catch (tagError) {
+        logger.warn(`AI tagging skipped: ${tagError.message}`);
+      }
+
       results.stats.totalEvents += results.rss.length;
       logger.info(`RSS collection completed: ${results.rss.length} events`);
     } catch (error) {
@@ -285,4 +353,5 @@ export default {
   fetchCISAExploitedVulnerabilities,
   fetchSecurityRSSFeeds,
   collectAllEvents,
+  getNewsFeedConfigs,
 };

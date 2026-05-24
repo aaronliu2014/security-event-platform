@@ -53,6 +53,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      TZ: Asia/Shanghai
       PORT: 3000
       DB_HOST: postgres
       DB_PORT: 5432
@@ -68,7 +69,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@security-event-platform.local}
       NVD_API_KEY: ${NVD_API_KEY:-}
-      COLLECTION_FREQUENCY: ${COLLECTION_FREQUENCY:-daily}
+      COLLECTION_FREQUENCY: ${COLLECTION_FREQUENCY:-early-morning}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres:
