@@ -20,6 +20,17 @@ export const config = {
   api: {
     nvdApiKey: process.env.NVD_API_KEY || '',
   },
+  jwt: {
+    secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+  },
+  email: {
+    smtpHost: process.env.SMTP_HOST || 'localhost',
+    smtpPort: process.env.SMTP_PORT || 587,
+    smtpSecure: process.env.SMTP_SECURE === 'true',
+    smtpUser: process.env.SMTP_USER,
+    smtpPassword: process.env.SMTP_PASSWORD,
+    smtpFrom: process.env.SMTP_FROM || 'noreply@security-event-platform.local',
+  },
 };
 
 export default config;

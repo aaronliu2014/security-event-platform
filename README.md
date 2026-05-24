@@ -10,9 +10,11 @@
 
 - ✅ **多源数据收集** - NVD/CISA API、RSS 源、社交媒体
 - ✅ **自定义频度** - 用户可配置收集间隔（日/周/月）
+- ✅ **用户认证系统** - JWT 令牌、密码加密 (bcryptjs)
+- ✅ **用户管理** - 资料管理、偏好设置
 - ✅ **事件分析** - 聚类、分类、趋势识别
+- ✅ **通知系统** - 邮件通知、规则匹配、历史记录
 - ✅ **可视化展示** - Web 仪表板、事件列表、搜索
-- ✅ **智能通知** - 邮件/推送通知、规则配置
 
 ## 技术架构
 
@@ -21,6 +23,9 @@
 - PostgreSQL（主数据库）
 - Redis（缓存）
 - Node Cron（任务调度）
+- bcryptjs（密码加密）
+- jsonwebtoken（JWT 认证）
+- nodemailer（邮件发送）
 
 ### 前端
 - React 18
@@ -85,9 +90,23 @@ security-event-platform/
 │   │   ├── index.js           # 入口文件
 │   │   ├── config/            # 配置文件
 │   │   ├── routes/            # API 路由
+│   │   │   ├── auth.js        # 认证路由
+│   │   │   ├── users.js       # 用户路由
+│   │   │   ├── analysis.js    # 分析路由
+│   │   │   ├── events.js      # 事件路由
+│   │   │   └── admin.js       # 管理路由
 │   │   ├── services/          # 业务逻辑
+│   │   │   ├── authService.js
+│   │   │   ├── userService.js
+│   │   │   ├── analysisService.js
+│   │   │   ├── notificationService.js
+│   │   │   └── eventService.js
 │   │   ├── models/            # 数据模型
+│   │   │   ├── User.js
+│   │   │   ├── UserPreference.js
+│   │   │   └── Notification.js
 │   │   ├── middleware/        # 中间件
+│   │   │   └── auth.js        # JWT 认证中间件
 │   │   ├── tasks/             # 定时任务
 │   │   └── utils/             # 工具函数
 │   ├── package.json
@@ -113,25 +132,115 @@ security-event-platform/
 ### 健康检查
 - `GET /api/health` - 服务器状态
 
-### 事件管理（开发中）
+### 用户认证
+- `POST /api/auth/register` - 用户注册
+- `POST /api/auth/login` - 用户登录
+
+### 用户管理
+- `GET /api/users/profile` - 获取用户资料
+- `PUT /api/users/profile` - 更新用户资料
+- `GET /api/users/preferences` - 获取用户偏好
+- `PUT /api/users/preferences` - 更新用户偏好
+
+### 通知系统
+- `GET /api/users/notifications` - 获取通知
+- `PUT /api/users/notifications/:id/read` - 标记为已读
+- `PUT /api/users/notifications/mark-all-read` - 全部标记已读
+- `GET /api/users/notifications/history` - 通知历史
+- `DELETE /api/users/notifications/:id` - 删除通知
+
+### 事件分析
 - `GET /api/events` - 获取事件列表
 - `GET /api/events/:id` - 获取事件详情
-- `GET /api/events/search` - 搜索事件
+- `GET /api/analysis/clusters` - 事件聚类
+- `POST /api/analysis/tags/:eventId` - 添加事件标签
+- `GET /api/analysis/tags/:eventId` - 获取事件标签
+- `GET /api/analysis/trends` - 事件趋势
+- `GET /api/analysis/severity-distribution` - 严重度分布
 
-### 用户管理（开发中）
-- `POST /api/users/register` - 用户注册
-- `POST /api/users/login` - 用户登录
-- `GET /api/users/profile` - 获取用户信息
-- `PUT /api/users/preferences` - 更新用户偏好设置
+## 使用示例
+
+### 用户注册
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "username": "user123",
+    "password": "password123",
+    "full_name": "John Doe"
+  }'
+```
+
+### 用户登录
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123"
+  }'
+```
+
+### 获取用户资料（需要认证）
+```bash
+curl -X GET http://localhost:3000/api/users/profile \
+  -H "Authorization: Bearer <token>"
+```
+
+### 更新用户偏好设置
+```bash
+curl -X PUT http://localhost:3000/api/users/preferences \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection_frequency": "daily",
+    "notification_enabled": true,
+    "email_notification_enabled": true,
+    "data_sources": ["nvd", "cve"],
+    "alert_severity_threshold": "high"
+  }'
+```
 
 ## 开发进度
 
-- [x] 项目初始化与架构
-- [ ] 数据收集模块
-- [ ] 核心功能后端
-- [ ] 前端界面开发
-- [ ] 集成与测试
-- [ ] 部署与上线
+- [x] Phase 1: 项目初始化与架构
+- [x] Phase 2: 数据收集模块
+- [x] Phase 3: 核心功能后端（用户认证、用户管理、事件分析、通知系统）
+- [ ] Phase 4: 前端界面开发
+- [ ] Phase 5: 集成与测试
+- [ ] Phase 6: 部署与上线
+
+## 环境变量配置
+
+### 必需变量
+```env
+# 服务器
+PORT=3000
+NODE_ENV=development
+
+# 数据库
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=security_events
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# JWT
+JWT_SECRET=your-secret-key-change-in-production
+
+# 邮件 (可选，用于邮件通知)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=noreply@security-event-platform.local
+```
 
 ## 贡献指南
 

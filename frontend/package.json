@@ -18,9 +18,11 @@
     "@testing-library/jest-dom": "^6.1.5",
     "eslint": "^8.54.0"
   },
+  "homepage": ".",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "cp build/index.html ../index.html && cp -r build/static ../static",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

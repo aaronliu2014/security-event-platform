@@ -1,8 +1,12 @@
 import express from 'express';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 import * as collectionScheduler from '../tasks/collectionScheduler.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
+
+router.use(authenticateToken);
+router.use(requireRole('admin'));
 
 /**
  * GET /api/admin/collection/status

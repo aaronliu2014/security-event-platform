@@ -1,5 +1,6 @@
 import pool from '../utils/database.js';
 import logger from '../utils/logger.js';
+import { get, set, delPattern, cacheKey } from '../utils/cache.js';
 
 /**
  * Save events to database, handling duplicates
@@ -53,6 +54,14 @@ export async function saveEvents(events, source) {
   }
 
   logger.info(`Saved ${stats.saved} events from ${source}, skipped ${stats.skipped}`);
+
+  if (stats.saved > 0) {
+    await delPattern(cacheKey('events', '*'));
+    await delPattern(cacheKey('stats', '*'));
+    await delPattern(cacheKey('search', '*'));
+    await delPattern(cacheKey('analysis', '*'));
+  }
+
   return stats;
 }
 
@@ -69,6 +78,10 @@ export async function getEvents(options = {}) {
     sortBy = 'published_date',
     sortOrder = 'DESC',
   } = options;
+
+  const ck = cacheKey('events', severity || 'all', source || 'all', eventType || 'all', sortBy, sortOrder, limit, offset);
+  const cached = await get(ck);
+  if (cached) return cached;
 
   try {
     let query = 'SELECT * FROM events WHERE 1=1';
@@ -100,6 +113,7 @@ export async function getEvents(options = {}) {
     params.push(limit, offset);
 
     const result = await pool.query(query, params);
+    await set(ck, result.rows, 300);
     return result.rows;
   } catch (error) {
     logger.error(`Error fetching events: ${error.message}`);
@@ -112,8 +126,14 @@ export async function getEvents(options = {}) {
  */
 export async function getEventById(id) {
   try {
+    const ck = cacheKey('event', id);
+    const cached = await get(ck);
+    if (cached) return cached;
+
     const result = await pool.query('SELECT * FROM events WHERE id = $1', [id]);
-    return result.rows[0] || null;
+    const event = result.rows[0] || null;
+    if (event) await set(ck, event, 600);
+    return event;
   } catch (error) {
     logger.error(`Error fetching event ${id}: ${error.message}`);
     throw error;
@@ -125,16 +145,21 @@ export async function getEventById(id) {
  */
 export async function searchEvents(keyword, limit = 50) {
   try {
+    const ck = cacheKey('search', keyword, limit);
+    const cached = await get(ck);
+    if (cached) return cached;
+
     const query = `
-      SELECT * FROM events 
-      WHERE title ILIKE $1 
-         OR description ILIKE $1 
+      SELECT * FROM events
+      WHERE title ILIKE $1
+         OR description ILIKE $1
          OR affected_products::text ILIKE $1
       ORDER BY published_date DESC
       LIMIT $2
     `;
     const searchPattern = `%${keyword}%`;
     const result = await pool.query(query, [searchPattern, limit]);
+    await set(ck, result.rows, 120);
     return result.rows;
   } catch (error) {
     logger.error(`Error searching events: ${error.message}`);
@@ -147,8 +172,12 @@ export async function searchEvents(keyword, limit = 50) {
  */
 export async function getEventStats() {
   try {
+    const ck = cacheKey('stats');
+    const cached = await get(ck);
+    if (cached) return cached;
+
     const result = await pool.query(`
-      SELECT 
+      SELECT
         COUNT(*) as total_events,
         COUNT(CASE WHEN severity = 'critical' THEN 1 END) as critical_count,
         COUNT(CASE WHEN severity = 'high' THEN 1 END) as high_count,
@@ -159,6 +188,7 @@ export async function getEventStats() {
         MAX(collected_date) as last_collection
       FROM events
     `);
+    await set(ck, result.rows[0], 600);
     return result.rows[0];
   } catch (error) {
     logger.error(`Error fetching event stats: ${error.message}`);

@@ -156,29 +156,67 @@ export async function fetchCISAExploitedVulnerabilities() {
 }
 
 /**
- * Fetch security news from RSS feeds (placeholder - requires feed-parser)
+ * Fetch security news from RSS feeds using rss-parser
  */
 export async function fetchSecurityRSSFeeds() {
   try {
     logger.info('Fetching security RSS feeds');
-    
-    // Placeholder implementation - actual RSS parsing would require a library
-    // like 'rss-parser' or 'feed-parser'
+    const Parser = (await import('rss-parser')).default;
+    const parser = new Parser();
+
     const feeds = [
-      'https://www.darkreading.com/rss.xml',
-      'https://feeds.wired.com/wired/index',
-      'https://www.infosecurity-magazine.com/feed/',
+      'https://feeds.feedburner.com/TheHackersNews',
+      'https://www.bleepingcomputer.com/feed/',
+      'https://therecord.media/feed/',
     ];
 
     const events = [];
-    // RSS parsing would happen here
-    logger.info('RSS feed fetching not yet fully implemented');
 
+    for (const feedUrl of feeds) {
+      try {
+        const feed = await parser.parseURL(feedUrl);
+        logger.info(`RSS feed ${feedUrl}: ${feed.items?.length || 0} items`);
+
+        const feedEvents = (feed.items || []).map((item) => ({
+          external_id: `RSS-${Buffer.from(item.link || item.guid || item.title).toString('base64').substring(0, 64)}`,
+          title: item.title || 'Untitled',
+          description: item.contentSnippet || item.content || item.summary || '',
+          source: 'RSS',
+          source_url: item.link || feedUrl,
+          event_type: 'news',
+          severity: detectRSSSeverity(item.title + ' ' + (item.contentSnippet || '')),
+          affected_products: [],
+          published_date: new Date(item.pubDate || item.isoDate || Date.now()),
+          data: {
+            feed_source: feed.title || feedUrl,
+            creator: item.creator,
+            categories: item.categories || [],
+          },
+        }));
+        events.push(...feedEvents);
+      } catch (feedError) {
+        logger.error(`Failed to parse RSS feed ${feedUrl}: ${feedError.message}`);
+      }
+    }
+
+    logger.info(`RSS feed collection completed: ${events.length} events from ${feeds.length} feeds`);
     return events;
   } catch (error) {
     logger.error(`Failed to fetch RSS feeds: ${error.message}`);
     throw error;
   }
+}
+
+/**
+ * Auto-detect severity from RSS item text
+ */
+function detectRSSSeverity(text) {
+  const lower = text.toLowerCase();
+  if (/critical|zero.day|remote.code.execution|actively.exploited/.test(lower)) return 'critical';
+  if (/high.severity|ransomware|severe|emergency/.test(lower)) return 'high';
+  if (/medium|moderate|patch.tuesday/.test(lower)) return 'medium';
+  if (/low|minor|informational/.test(lower)) return 'low';
+  return 'info';
 }
 
 /**

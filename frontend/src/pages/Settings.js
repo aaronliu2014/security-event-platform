@@ -1,80 +1,115 @@
-import React, { useState } from 'react';
-import { Form, Card, Button, Select, Switch, Space, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Form, Card, Button, Select, Switch, Space, message, Checkbox, Spin } from 'antd';
 import { usePreferencesStore } from '../store/index';
+
+const frequencyOptions = [
+  { label: 'Hourly', value: 'hourly' },
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+];
+
+const severityOptions = [
+  { label: 'Low', value: 'low' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'High', value: 'high' },
+  { label: 'Critical', value: 'critical' },
+];
+
+const sourceOptions = [
+  { label: 'NVD', value: 'nvd' },
+  { label: 'CISA', value: 'cisa' },
+  { label: 'RSS', value: 'rss' },
+];
 
 function Settings() {
   const [form] = Form.useForm();
-  const preferences = usePreferencesStore((state) => state.preferences);
-  const setPreferences = usePreferencesStore((state) => state.setPreferences);
-  const [loading, setLoading] = useState(false);
+  const { preferences, loading, loadPreferences, savePreferences } = usePreferencesStore();
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  useEffect(() => {
+    if (preferences) {
+      form.setFieldsValue(preferences);
+    }
+  }, [preferences, form]);
 
   const handleSave = async (values) => {
-    setLoading(true);
+    setSaving(true);
     try {
-      // API call to save preferences
-      setPreferences(values);
+      await savePreferences(values);
       message.success('Settings saved successfully');
     } catch (error) {
-      message.error('Failed to save settings');
+      const msg = error.response?.data?.error || 'Failed to save settings';
+      message.error(msg);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
     <div>
       <h1>Settings</h1>
-      <Card style={{ maxWidth: 600 }}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
-          initialValues={preferences || {}}
-        >
-          <Form.Item
-            name="collection_frequency"
-            label="Collection Frequency"
-            rules={[{ required: true }]}
+      <Spin spinning={loading}>
+        <Card style={{ maxWidth: 600 }}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSave}
           >
-            <Select>
-              <Select.Option value="hourly">Hourly</Select.Option>
-              <Select.Option value="daily">Daily</Select.Option>
-              <Select.Option value="weekly">Weekly</Select.Option>
-              <Select.Option value="monthly">Monthly</Select.Option>
-            </Select>
-          </Form.Item>
+            <Form.Item
+              name="collection_frequency"
+              label="Collection Frequency"
+              rules={[{ required: true, message: 'Please select a frequency' }]}
+            >
+              <Select options={frequencyOptions} />
+            </Form.Item>
 
-          <Form.Item
-            name="notification_enabled"
-            label="Enable Notifications"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
+            <Form.Item
+              name="data_sources"
+              label="Data Sources"
+            >
+              <Checkbox.Group options={sourceOptions} />
+            </Form.Item>
 
-          <Form.Item
-            name="notification_severity_threshold"
-            label="Notification Level"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Select.Option value="low">Low</Select.Option>
-              <Select.Option value="medium">Medium</Select.Option>
-              <Select.Option value="high">High</Select.Option>
-              <Select.Option value="critical">Critical</Select.Option>
-            </Select>
-          </Form.Item>
+            <Form.Item
+              name="notification_enabled"
+              label="Enable Notifications"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
 
-          <Space>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Save Settings
-            </Button>
-            <Button onClick={() => form.resetFields()}>
-              Reset
-            </Button>
-          </Space>
-        </Form>
-      </Card>
+            <Form.Item
+              name="email_notification_enabled"
+              label="Email Notifications"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              name="alert_severity_threshold"
+              label="Minimum Alert Severity"
+              rules={[{ required: true, message: 'Please select a threshold' }]}
+            >
+              <Select options={severityOptions} />
+            </Form.Item>
+
+            <Space>
+              <Button type="primary" htmlType="submit" loading={saving}>
+                Save Settings
+              </Button>
+              <Button onClick={() => form.resetFields()}>
+                Reset
+              </Button>
+            </Space>
+          </Form>
+        </Card>
+      </Spin>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import express from 'express';
 import * as eventService from '../services/eventService.js';
+import { schemas, validate } from '../validators/index.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -8,7 +9,7 @@ const router = express.Router();
  * GET /api/events
  * Get events with optional filtering
  */
-router.get('/', async (req, res) => {
+router.get('/', validate(schemas.eventsQuery, 'query'), async (req, res) => {
   try {
     const {
       limit = 50,
@@ -46,40 +47,10 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/events/:id
- * Get event by ID
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const event = await eventService.getEventById(id);
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        error: 'Event not found',
-      });
-    }
-
-    res.json({
-      success: true,
-      data: event,
-    });
-  } catch (error) {
-    logger.error(`Error fetching event ${req.params.id}: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch event',
-      message: error.message,
-    });
-  }
-});
-
-/**
  * GET /api/events/search
  * Search events by keyword
  */
-router.get('/search', async (req, res) => {
+router.get('/search', validate(schemas.searchQuery, 'query'), async (req, res) => {
   try {
     const { q, limit = 50 } = req.query;
 
@@ -152,6 +123,36 @@ router.get('/source/:source', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch events',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/events/:id
+ * Get event by ID — MUST be last to not shadow /search, /stats, /source
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await eventService.getEventById(id);
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        error: 'Event not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: event,
+    });
+  } catch (error) {
+    logger.error(`Error fetching event ${req.params.id}: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch event',
       message: error.message,
     });
   }
