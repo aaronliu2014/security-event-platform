@@ -16,7 +16,7 @@ function Login() {
     try {
       await login(values.email, values.password);
       message.success('Login successful');
-      navigate('/dashboard');
+      navigate('/stats');
     } catch (error) {
       const msg = error.response?.data?.error || 'Login failed';
       message.error(msg);

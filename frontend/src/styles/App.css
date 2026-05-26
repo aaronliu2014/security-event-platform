@@ -11,11 +11,7 @@ body {
   min-height: 100vh;
 }
 
-.ant-layout-sider {
-  box-shadow: 2px 0 8px 0 rgba(0, 0, 0, 0.06);
-}
-
-.ant-layout-content {
-  background: #f5f5f5;
-  padding: 24px;
+/* Horizontal top nav menu items */
+.ant-menu-horizontal {
+  line-height: 54px;
 }

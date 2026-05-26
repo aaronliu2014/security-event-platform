@@ -1,27 +1,46 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Row, Col, Typography, Divider } from 'antd';
-import { RadarChartOutlined } from '@ant-design/icons';
+import { Row, Col, Typography, Divider, Alert, Button, Tag } from 'antd';
+import { RadarChartOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import NewsHeader from '../components/NewsHeader';
 import NewsList from '../components/NewsList';
 import NewsSidebar from '../components/NewsSidebar';
 import { newsService, eventService } from '../services/api';
+import { useAuthStore } from '../store/index';
+import { categoryConfig } from '../components/TopNavbar';
 import '../styles/HomePage.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const PAGE_SIZE = 15;
 
 function HomePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   const [featured, setFeatured] = useState([]);
   const [articles, setArticles] = useState([]);
   const [trendingTags, setTrendingTags] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [activeTag, setActiveTag] = useState(null);
 
+  const tagFromUrl = searchParams.get('tag');
+
+  useEffect(() => {
+    if (tagFromUrl && categoryConfig[tagFromUrl]) {
+      setActiveTag(tagFromUrl);
+      setPage(1);
+    } else {
+      setActiveTag(null);
+    }
+  }, [tagFromUrl]);
+
   const fetchData = useCallback(async (p = 1, tag = null) => {
     setLoading(true);
+    setApiError(false);
     try {
       const [featuredRes, newsRes, tagsRes, statsRes] = await Promise.all([
         newsService.getFeatured({ limit: 5 }),
@@ -37,6 +56,7 @@ function HomePage() {
       setStats(statsRes.data.data || {});
     } catch (error) {
       console.error('Failed to load homepage data', error);
+      setApiError(true);
     } finally {
       setLoading(false);
     }
@@ -53,11 +73,9 @@ function HomePage() {
 
   const handleTagClick = (tag) => {
     if (activeTag === tag) {
-      setActiveTag(null);
-      setPage(1);
+      setSearchParams({});
     } else {
-      setActiveTag(tag);
-      setPage(1);
+      setSearchParams({ tag });
     }
   };
 
@@ -66,6 +84,10 @@ function HomePage() {
       window.open(article.source_url, '_blank');
     }
   };
+
+  const activeTagLabel = activeTag && categoryConfig[activeTag]
+    ? categoryConfig[activeTag].label
+    : activeTag;
 
   return (
     <div className="homepage">
@@ -81,22 +103,46 @@ function HomePage() {
 
       <Divider style={{ margin: '16px 0' }} />
 
+      {apiError && (
+        <Alert
+          message="无法连接到后端服务"
+          description="请确保后端服务已启动（默认端口 3000），或运行 docker-compose up -d 启动全部服务。首次启动后系统会自动采集数据。"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          action={
+            <Button size="small" type="primary" onClick={() => fetchData(page, activeTag)}>
+              <ReloadOutlined /> 重试
+            </Button>
+          }
+        />
+      )}
+
+      {activeTag && (
+        <div style={{ marginBottom: 16 }}>
+          <Tag color={categoryConfig[activeTag]?.color || 'blue'} style={{ fontSize: 13, padding: '4px 12px' }}>
+            {categoryConfig[activeTag]?.icon} {activeTagLabel}
+          </Tag>
+          <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+            共 {total} 篇相关文章
+          </Text>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => setSearchParams({})}
+          >
+            清除筛选
+          </Button>
+        </div>
+      )}
+
       <Row gutter={[24, 24]}>
-        {/* Main content area */}
-        <Col xs={24} lg={16}>
+        <Col xs={24} lg={isAuthenticated ? 16 : 18}>
           <NewsHeader featured={featured} loading={loading} />
 
           <div style={{ marginTop: 8 }}>
             <Title level={5} style={{ marginBottom: 16 }}>
-              {activeTag ? `Filtered by: ${activeTag}` : 'Latest AI Security News'}
-              {activeTag && (
-                <span
-                  style={{ marginLeft: 12, fontSize: 13, color: '#1677ff', cursor: 'pointer' }}
-                  onClick={() => setActiveTag(null)}
-                >
-                  Clear filter
-                </span>
-              )}
+              {activeTag ? `${activeTagLabel} 相关文章` : '最新 AI 安全动态'}
             </Title>
             <NewsList
               articles={articles}
@@ -110,13 +156,13 @@ function HomePage() {
           </div>
         </Col>
 
-        {/* Sidebar */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={isAuthenticated ? 8 : 6}>
           <NewsSidebar
             trendingTags={trendingTags}
-            stats={stats}
+            stats={isAuthenticated ? stats : null}
             loading={loading}
             onTagClick={handleTagClick}
+            activeTag={activeTag}
           />
         </Col>
       </Row>

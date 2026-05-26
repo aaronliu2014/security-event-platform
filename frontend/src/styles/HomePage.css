@@ -1,5 +1,5 @@
 .homepage {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -33,14 +33,7 @@
   background: #f0f0f0;
 }
 
-/* Tags cloud wrapping */
-.news-sidebar-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* Responsive: stack on mobile */
+/* Responsive */
 @media (max-width: 768px) {
   .homepage {
     padding: 0 8px;
