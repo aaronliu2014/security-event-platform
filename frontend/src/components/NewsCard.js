@@ -35,7 +35,7 @@ const topicLabels = {
   'ai-agent-security': 'AI Agent Security',
   'ai-supply-chain': 'AI Supply Chain',
   'ai-vulnerability': 'AI Vulnerability',
-  'ai-safety-alignment': 'AI Safety & Alignment',
+  'ai-safety-alignment': 'AI 政策法规动态',
   'ai-privacy': 'AI Privacy',
   'generative-ai-security': 'Generative AI Security',
   'ai-threat-intel': 'AI Threat Intelligence',

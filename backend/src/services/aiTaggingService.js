@@ -128,14 +128,18 @@ const AI_TOPICS = {
   },
   'ai-safety-alignment': {
     keywords: [
+      'ai policy', 'ai regulation update', 'ai regulatory change', 'ai law',
+      'ai legislation update', 'ai bill passed', 'ai executive order',
+      'ai compliance requirement', 'ai standard', 'ai framework update',
+      'ai policy news', 'ai regulatory news', 'ai government',
       'ai safety', 'ai alignment', 'ai control problem', 'superalignment',
-      'model alignment', 'value alignment', 'ai existential risk', 'ai catastrophe',
-      'ai harm prevention', 'constitutional ai', 'rlhf safety', 'model refusal',
-      'ai behavior control', 'safety training', 'model self-destruction',
-      'ai containment', 'ai shutdown', 'off-switch ai',
+      'constitutional ai', 'ai harm prevention', 'model refusal',
+      'ai behavior control', 'safety training', 'ai governance update',
+      'ai policy brief', 'ai licensing', 'ai registration', 'ai reporting',
+      'ai transparency policy', 'ai accountability policy',
     ],
     color: '#1890ff',
-    label: 'AI Safety & Alignment',
+    label: 'AI Policy & Regulation',
   },
   'ai-privacy': {
     keywords: [

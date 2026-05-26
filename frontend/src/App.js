@@ -59,6 +59,8 @@ function AppLayout() {
   );
 }
 
+const routerBasename = process.env.NODE_ENV === 'production' ? '/security-event-platform' : undefined;
+
 function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const initFromStorage = useAuthStore((s) => s.initFromStorage);
@@ -68,7 +70,7 @@ function App() {
   }, []);
 
   return (
-    <Router>
+    <Router basename={routerBasename}>
       <Routes>
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />

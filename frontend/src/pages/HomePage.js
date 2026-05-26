@@ -25,18 +25,10 @@ function HomePage() {
   const [apiError, setApiError] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [activeTag, setActiveTag] = useState(null);
 
-  const tagFromUrl = searchParams.get('tag');
-
-  useEffect(() => {
-    if (tagFromUrl && categoryConfig[tagFromUrl]) {
-      setActiveTag(tagFromUrl);
-      setPage(1);
-    } else {
-      setActiveTag(null);
-    }
-  }, [tagFromUrl]);
+  // Derive activeTag directly from URL params — no separate state
+  const rawTag = searchParams.get('tag');
+  const activeTag = rawTag && categoryConfig[rawTag] ? rawTag : null;
 
   const fetchData = useCallback(async (p = 1, tag = null) => {
     setLoading(true);
@@ -62,9 +54,15 @@ function HomePage() {
     }
   }, []);
 
+  // When tag changes, reset page and fetch. When only page changes, just fetch.
   useEffect(() => {
-    fetchData(page, activeTag);
-  }, [fetchData, page, activeTag]);
+    setPage(1);
+    fetchData(1, activeTag);
+  }, [activeTag]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (page > 1) fetchData(page, activeTag);
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (p) => {
     setPage(p);
@@ -85,9 +83,7 @@ function HomePage() {
     }
   };
 
-  const activeTagLabel = activeTag && categoryConfig[activeTag]
-    ? categoryConfig[activeTag].label
-    : activeTag;
+  const activeTagLabel = activeTag ? categoryConfig[activeTag]?.label : null;
 
   return (
     <div className="homepage">

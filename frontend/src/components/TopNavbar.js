@@ -13,7 +13,7 @@ const { Text } = Typography;
 
 const categoryConfig = {
   'ai-vulnerability': { label: 'AI 安全漏洞', icon: <BugOutlined />, color: '#cf1322' },
-  'ai-safety-alignment': { label: 'AI 安全与对齐', icon: <SafetyCertificateOutlined />, color: '#1890ff' },
+  'ai-safety-alignment': { label: 'AI 政策法规动态', icon: <SafetyCertificateOutlined />, color: '#1890ff' },
   'ai-privacy': { label: 'AI 隐私', icon: <LockOutlined />, color: '#7c3aed' },
   'generative-ai-security': { label: '生成式 AI 安全', icon: <RobotOutlined />, color: '#c41d7f' },
   'ai-threat-intel': { label: 'AI 威胁情报', icon: <AlertOutlined />, color: '#d4380d' },
