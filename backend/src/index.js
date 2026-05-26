@@ -136,10 +136,27 @@ server.listen(PORT, async () => {
 
   // Initialize data collection scheduler
   try {
-    const collectionFrequency = process.env.COLLECTION_FREQUENCY || 'early-morning';
+    const collectionFrequency = process.env.COLLECTION_FREQUENCY || 'daily';
     logger.info(`Initializing collection scheduler with frequency: ${collectionFrequency}`);
     collectionScheduler.scheduleCollectionTask(collectionFrequency);
     logger.info('Data collection scheduler initialized successfully');
+
+    // Run initial collection on startup if database has no news
+    try {
+      const { default: pool } = await import('./utils/database.js');
+      const result = await pool.query("SELECT COUNT(*) as count FROM events WHERE event_type = 'news'");
+      const newsCount = parseInt(result.rows[0]?.count || 0);
+      if (newsCount === 0) {
+        logger.info('No news in database, running initial data collection...');
+        collectionScheduler.executeCollectionTask().then((res) => {
+          logger.info(`Initial collection result: ${JSON.stringify(res)}`);
+        });
+      } else {
+        logger.info(`Database already has ${newsCount} news articles, skipping initial collection`);
+      }
+    } catch (initErr) {
+      logger.warn(`Could not check for initial data: ${initErr.message}`);
+    }
   } catch (error) {
     logger.error(`Failed to initialize collection scheduler: ${error.message}`);
   }

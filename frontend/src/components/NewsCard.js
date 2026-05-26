@@ -15,6 +15,12 @@ const topicColors = {
   'rag-security': '#52c41a',
   'ai-agent-security': '#a0d911',
   'ai-supply-chain': '#faad14',
+  'ai-vulnerability': '#cf1322',
+  'ai-safety-alignment': '#1890ff',
+  'ai-privacy': '#7c3aed',
+  'generative-ai-security': '#c41d7f',
+  'ai-threat-intel': '#d4380d',
+  'ai-incident': '#d48806',
 };
 
 const topicLabels = {
@@ -28,6 +34,12 @@ const topicLabels = {
   'rag-security': 'RAG Security',
   'ai-agent-security': 'AI Agent Security',
   'ai-supply-chain': 'AI Supply Chain',
+  'ai-vulnerability': 'AI Vulnerability',
+  'ai-safety-alignment': 'AI Safety & Alignment',
+  'ai-privacy': 'AI Privacy',
+  'generative-ai-security': 'Generative AI Security',
+  'ai-threat-intel': 'AI Threat Intelligence',
+  'ai-incident': 'AI Incident',
 };
 
 function timeAgo(dateStr) {

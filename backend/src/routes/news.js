@@ -20,17 +20,17 @@ router.get('/', async (req, res) => {
       sortOrder = 'DESC',
     } = req.query;
 
-    const articles = await newsService.getNewsArticles({
+    const result = await newsService.getNewsArticles({
       limit: Math.min(parseInt(limit), 50),
       offset: parseInt(offset),
       tag,
       source,
-      minRelevance: minRelevance ? parseFloat(minRelevance) : null,
+      minRelevance: minRelevance !== undefined ? parseFloat(minRelevance) : 0.01,
       sortBy,
       sortOrder,
     });
 
-    res.json({ success: true, data: articles, count: articles.length });
+    res.json({ success: true, data: result.rows, total: result.total });
   } catch (error) {
     logger.error(`Error fetching news: ${error.message}`);
     res.status(500).json({ success: false, error: 'Failed to fetch news', message: error.message });

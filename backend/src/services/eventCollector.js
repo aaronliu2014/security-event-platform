@@ -9,14 +9,26 @@ const RATE_LIMIT_DELAY = 1000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// News feed configuration: each feed preserves its own source identity
+// News feed configuration: AI security focused sources
 const NEWS_FEEDS = [
-  // General security news
-  { url: 'https://krebsonsecurity.com/feed/', source: 'KrebsOnSecurity', category: 'general' },
-  { url: 'https://www.darkreading.com/rss.xml', source: 'DarkReading', category: 'general' },
-  { url: 'https://www.schneier.com/feed/atom/', source: 'SchneierOnSecurity', category: 'general' },
-  // AI / tech security
+  // AI / tech security (primary sources)
   { url: 'https://simonwillison.net/atom/everything/', source: 'SimonWillison', category: 'ai-security' },
+  { url: 'https://www.schneier.com/feed/atom/', source: 'SchneierOnSecurity', category: 'ai-security' },
+  // Security news (broad coverage including AI)
+  { url: 'https://krebsonsecurity.com/feed/', source: 'KrebsOnSecurity', category: 'security-news' },
+  { url: 'https://www.darkreading.com/rss.xml', source: 'DarkReading', category: 'security-news' },
+  { url: 'https://www.bleepingcomputer.com/feed/', source: 'BleepingComputer', category: 'security-news' },
+  { url: 'https://feeds.feedburner.com/TheHackersNews', source: 'TheHackerNews', category: 'security-news' },
+  { url: 'https://www.securityweek.com/feed/', source: 'SecurityWeek', category: 'security-news' },
+  // Security research (often covers AI/ML security)
+  { url: 'https://blog.trailofbits.com/feed/', source: 'TrailOfBits', category: 'security-research' },
+  // AI/ML specific publications
+  { url: 'https://www.artificialintelligence-news.com/feed/', source: 'AI News', category: 'ai-news' },
+  { url: 'https://blog.google/technology/ai/rss/', source: 'Google AI Blog', category: 'ai-news' },
+  { url: 'https://openai.com/blog/rss.xml', source: 'OpenAI Blog', category: 'ai-news' },
+  { url: 'https://www.anthropic.com/blog/rss.xml', source: 'Anthropic Blog', category: 'ai-news' },
+  { url: 'https://unit42.paloaltonetworks.com/feed/', source: 'Unit42', category: 'security-research' },
+  { url: 'https://www.csoonline.com/feed/', source: 'CSO Online', category: 'security-news' },
 ];
 
 /**
@@ -322,12 +334,15 @@ export async function collectAllEvents() {
       logger.info('Starting RSS feed collection');
       results.rss = await fetchSecurityRSSFeeds();
 
-      // Run AI tagging on RSS news items
+      // Run AI tagging on RSS news items and filter non-AI content
       try {
         const { batchTagEvents: tagEvents } = await import('./aiTaggingService.js');
         results.rss = tagEvents(results.rss);
-        const aiTagged = results.rss.filter((e) => e.ai_relevance_score > 0).length;
-        logger.info(`AI tagging: ${aiTagged}/${results.rss.length} articles matched AI topics`);
+        const totalBeforeFilter = results.rss.length;
+        // Keep only AI-relevant articles (score > 0)
+        results.rss = results.rss.filter((e) => e.ai_relevance_score > 0);
+        const filtered = totalBeforeFilter - results.rss.length;
+        logger.info(`AI tagging: ${results.rss.length} AI-relevant articles kept, ${filtered} non-AI articles filtered out`);
       } catch (tagError) {
         logger.warn(`AI tagging skipped: ${tagError.message}`);
       }

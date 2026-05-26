@@ -66,12 +66,20 @@ function NewsSidebar({ trendingTags, stats, loading, onTagClick }) {
         <List
           size="small"
           dataSource={[
-            { name: 'NVD', desc: 'National Vulnerability Database' },
-            { name: 'CISA', desc: 'Known Exploited Vulnerabilities' },
+            { name: 'SimonWillison', desc: 'AI & software engineering' },
+            { name: 'SchneierOnSecurity', desc: 'Security & technology analysis' },
             { name: 'KrebsOnSecurity', desc: 'Investigative security journalism' },
             { name: 'DarkReading', desc: 'Cybersecurity news & analysis' },
-            { name: 'SchneierOnSecurity', desc: 'Security & technology analysis' },
-            { name: 'SimonWillison', desc: 'AI & software engineering' },
+            { name: 'BleepingComputer', desc: 'Technology & security news' },
+            { name: 'TheHackerNews', desc: 'Information security news' },
+            { name: 'SecurityWeek', desc: 'Enterprise security news' },
+            { name: 'TrailOfBits', desc: 'Security research & engineering' },
+            { name: 'Unit42', desc: 'Palo Alto threat research' },
+            { name: 'OpenAI Blog', desc: 'OpenAI research & updates' },
+            { name: 'Anthropic Blog', desc: 'Anthropic research & updates' },
+            { name: 'Google AI Blog', desc: 'Google AI research' },
+            { name: 'AI News', desc: 'Artificial intelligence news' },
+            { name: 'CSO Online', desc: 'CSO security & leadership' },
           ]}
           renderItem={(item) => (
             <List.Item style={{ padding: '4px 0', border: 'none' }}>

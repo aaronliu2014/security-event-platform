@@ -32,7 +32,7 @@ function HomePage() {
 
       setFeatured(featuredRes.data.data || []);
       setArticles(newsRes.data.data || []);
-      setTotal(200); // approximate total for pagination display
+      setTotal(newsRes.data.total || 0);
       setTrendingTags(tagsRes.data.data || []);
       setStats(statsRes.data.data || {});
     } catch (error) {

@@ -4,6 +4,7 @@ import { get, set, cacheKey } from '../utils/cache.js';
 
 /**
  * Get paginated news articles with optional AI topic and source filtering.
+ * Returns { rows, total } for pagination. Defaults to AI-relevant content only.
  */
 export async function getNewsArticles(options = {}) {
   const {
@@ -11,52 +12,67 @@ export async function getNewsArticles(options = {}) {
     offset = 0,
     tag = null,
     source = null,
-    minRelevance = null,
+    minRelevance = 0.01,
     sortBy = 'published_date',
     sortOrder = 'DESC',
   } = options;
 
-  const ck = cacheKey('news', tag || 'all', source || 'all', String(minRelevance || 0), sortBy, sortOrder, limit, offset);
+  const ck = cacheKey('news', tag || 'all', source || 'all', String(minRelevance), sortBy, sortOrder, limit, offset);
   const cached = await get(ck);
   if (cached) return cached;
 
   try {
-    let query = `SELECT e.*, COALESCE(
-      (SELECT json_group_array(et.tag_name)
-       FROM event_tags et WHERE et.event_id = e.id), '[]'
-    ) as tags
-    FROM events e
-    WHERE e.event_type = 'news'`;
     const params = [];
     let paramIndex = 1;
 
+    const whereClauses = ["e.event_type = 'news'"];
+
+    if (minRelevance !== null && minRelevance !== undefined && minRelevance > 0) {
+      whereClauses.push(`e.ai_relevance_score >= $${paramIndex++}`);
+      params.push(Number(minRelevance));
+    }
+
     if (tag) {
-      query += ` AND e.id IN (SELECT event_id FROM event_tags WHERE tag_name = $${paramIndex++})`;
+      whereClauses.push(`e.id IN (SELECT event_id FROM event_tags WHERE tag_name = $${paramIndex++})`);
       params.push(tag);
     }
 
     if (source) {
-      query += ` AND e.source = $${paramIndex++}`;
+      whereClauses.push(`e.source = $${paramIndex++}`);
       params.push(source);
     }
 
-    if (minRelevance !== null && minRelevance !== undefined) {
-      query += ` AND e.ai_relevance_score >= $${paramIndex++}`;
-      params.push(Number(minRelevance));
-    }
+    const whereSQL = whereClauses.join(' AND ');
 
     const validSortColumns = ['published_date', 'collected_date', 'ai_relevance_score', 'severity', 'title'];
     const finalSortBy = validSortColumns.includes(sortBy) ? sortBy : 'published_date';
     const finalSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    query += ` ORDER BY e.${finalSortBy} ${finalSortOrder}`;
-    query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-    params.push(limit, offset);
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM events e WHERE ${whereSQL}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0]?.total || 0);
 
-    const result = await pool.query(query, params);
+    // Get paginated rows
+    const dataParams = [...params];
+    const dataQuery = `SELECT e.*, COALESCE(
+      (SELECT json_group_array(et.tag_name)
+       FROM event_tags et WHERE et.event_id = e.id), '[]'
+    ) as tags
+    FROM events e
+    WHERE ${whereSQL}
+    ORDER BY e.${finalSortBy} ${finalSortOrder}
+    LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    dataParams.push(limit, offset);
+
+    const result = await pool.query(dataQuery, dataParams);
     const rows = (result.rows || []).map(parseNewsRow);
-    await set(ck, rows, 300);
-    return rows;
+
+    const data = { rows, total };
+    await set(ck, data, 300);
+    return data;
   } catch (error) {
     logger.error(`Error fetching news articles: ${error.message}`);
     throw error;
