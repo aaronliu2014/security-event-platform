@@ -1,3 +1,4 @@
+# Build trigger: deploy latest backend code
 FROM node:18-alpine
 
 WORKDIR /app
