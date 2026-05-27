@@ -3,9 +3,6 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile",
-    "watchPatterns": [
-      "/backend/**"
-    ],
     "buildEnvironment": "V3"
   },
   "deploy": {
