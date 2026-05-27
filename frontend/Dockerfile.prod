@@ -3,6 +3,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+
+ARG REACT_APP_API_URL=https://security-event-platform-production.up.railway.app/api
+ARG REACT_APP_WS_URL=wss://security-event-platform-production.up.railway.app
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_WS_URL=$REACT_APP_WS_URL
+
 RUN npm run build
 
 FROM nginx:1.25-alpine

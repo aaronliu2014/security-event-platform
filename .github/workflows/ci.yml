@@ -45,6 +45,9 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          REACT_APP_API_URL: https://security-event-platform-production.up.railway.app/api
+          REACT_APP_WS_URL: wss://security-event-platform-production.up.railway.app
 
   build-docker:
     name: Docker Build
