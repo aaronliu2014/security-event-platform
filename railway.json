@@ -3,7 +3,7 @@
   "build": {
     "builder": "RAILPACK",
     "watchPatterns": [
-      "/backend/**"
+      "/**"
     ],
     "buildEnvironment": "V3"
   },
@@ -24,3 +24,4 @@
     "restartPolicyMaxRetries": 10
   }
 }
+
