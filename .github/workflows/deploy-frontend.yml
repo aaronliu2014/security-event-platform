@@ -1,0 +1,57 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with correct backend URL
+        run: npm run build
+        env:
+          REACT_APP_API_URL: https://security-event-platform-production.up.railway.app/api
+          REACT_APP_WS_URL: wss://security-event-platform-production.up.railway.app
+
+      - name: Copy build output to repo root
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp frontend/build/index.html index.html
+          rm -rf static
+          cp -r frontend/build/static static
+
+      - name: Commit and push updated static files
+        working-directory: ${{ github.workspace }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html static/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: rebuild frontend with correct backend URL [skip ci]"
+            git push
+          fi
