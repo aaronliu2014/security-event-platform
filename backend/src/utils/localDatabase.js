@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import logger from './logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = resolve(__dirname, '../../data/local.db');
+const DB_PATH = process.env.DB_PATH || resolve(__dirname, '../../data/local.db');
 
 let SQL = null;
 let db = null;
@@ -13,13 +13,20 @@ let db = null;
 async function getDb() {
   if (db) return db;
   SQL = await initSqlJs();
+
+  // Ensure data directory exists (e.g., /app/data on Railway)
+  const dbDir = dirname(DB_PATH);
+  if (!existsSync(dbDir)) {
+    mkdirSync(dbDir, { recursive: true });
+  }
+
   if (existsSync(DB_PATH)) {
     const buffer = readFileSync(DB_PATH);
     db = new SQL.Database(buffer);
-    logger.info('Loaded local database from disk');
+    logger.info(`Loaded local database from ${DB_PATH}`);
   } else {
     db = new SQL.Database();
-    logger.info('Created new local in-memory database');
+    logger.info(`Created new local database at ${DB_PATH}`);
   }
   return db;
 }

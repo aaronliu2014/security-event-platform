@@ -7,13 +7,27 @@ let _pool = null;
 let _initPromise = null;
 
 function createPostgresPool() {
+  // Railway provides DATABASE_URL for managed PostgreSQL
+  if (process.env.DATABASE_URL) {
+    const url = new URL(process.env.DATABASE_URL);
+    return new Pool({
+      user: url.username,
+      password: url.password,
+      host: url.hostname,
+      port: url.port || 5432,
+      database: url.pathname.slice(1),
+      connectionTimeoutMillis: 5000,
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+
   return new Pool({
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     database: process.env.DB_NAME || 'security_events',
-    connectionTimeoutMillis: 3000,
+    connectionTimeoutMillis: 5000,
   });
 }
 

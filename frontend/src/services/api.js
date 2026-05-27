@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_TIMEOUT = process.env.NODE_ENV === 'production' ? 30000 : 10000;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: API_TIMEOUT,
 });
 
 apiClient.interceptors.request.use((config) => {

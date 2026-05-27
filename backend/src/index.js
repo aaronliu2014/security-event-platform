@@ -26,17 +26,38 @@ const app = express();
 const isProduction = config.env === 'production';
 
 const allowedOrigins = isProduction
-  ? [process.env.FRONTEND_URL || 'https://localhost']
+  ? [
+      process.env.FRONTEND_URL || 'https://aaronliu2014.github.io',
+      'https://aaronliu2014.github.io',
+    ]
   : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: isProduction ? undefined : false,
+  contentSecurityPolicy: isProduction
+    ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", 'https://aaronliu2014.github.io'],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://aaronliu2014.github.io'],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'", 'https://aaronliu2014.github.io'],
+        },
+      }
+    : false,
   crossOriginEmbedderPolicy: false,
 }));
 
 app.use(cors({
-  origin: isProduction ? allowedOrigins : true,
+  origin: isProduction
+    ? (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    : true,
   credentials: true,
 }));
 
