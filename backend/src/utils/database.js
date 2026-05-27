@@ -16,7 +16,7 @@ function createPostgresPool() {
       host: url.hostname,
       port: url.port || 5432,
       database: url.pathname.slice(1),
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 3000,
       ssl: { rejectUnauthorized: false },
     });
   }
@@ -27,7 +27,7 @@ function createPostgresPool() {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     database: process.env.DB_NAME || 'security_events',
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 3000,
   });
 }
 

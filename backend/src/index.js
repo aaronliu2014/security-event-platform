@@ -132,6 +132,14 @@ app.use((req, res) => {
   });
 });
 
+// Catch unhandled errors so the process never crashes silently
+process.on('uncaughtException', (err) => {
+  logger.error(`Uncaught exception: ${err.message}`, err);
+});
+process.on('unhandledRejection', (reason) => {
+  logger.error(`Unhandled rejection: ${reason?.message || reason}`);
+});
+
 // Start server
 const server = http.createServer(app);
 initWebSocket(server);
