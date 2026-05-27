@@ -29,6 +29,7 @@ const allowedOrigins = isProduction
   ? [
       process.env.FRONTEND_URL || 'https://aaronliu2014.github.io',
       'https://aaronliu2014.github.io',
+      'https://aaronliu2014.github.io/security-event-platform',
     ]
   : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
 
@@ -51,7 +52,11 @@ app.use(helmet({
 app.use(cors({
   origin: isProduction
     ? (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (
+          !origin ||
+          allowedOrigins.includes(origin) ||
+          origin.startsWith('https://aaronliu2014.github.io')
+        ) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
