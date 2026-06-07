@@ -116,27 +116,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Root welcome endpoint
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Security Event Platform API',
-    version: '0.1.0',
-    status: 'running',
-    environment: config.env,
-    endpoints: {
-      health: '/api/health',
-      apiDocs: '/api-docs',
-      events: '/api/events',
-      auth: '/api/auth',
-      users: '/api/users',
-      analysis: '/api/analysis',
-      news: '/api/news',
-      admin: '/api/admin',
-    },
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
-});
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
