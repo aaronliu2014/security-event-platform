@@ -31,9 +31,12 @@ function Login() {
       minHeight: '100vh', background: '#f0f2f5',
     }}>
       <Card style={{ width: 400, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-        <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          Security Event Platform
+        <Title level={3} style={{ textAlign: 'center', marginBottom: 4 }}>
+          智安界
         </Title>
+        <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 20, fontSize: 12 }}>
+          智筑防线，安护无界
+        </Text>
         <Form name="login" onFinish={onFinish} layout="vertical" size="large">
           <Form.Item
             name="email"

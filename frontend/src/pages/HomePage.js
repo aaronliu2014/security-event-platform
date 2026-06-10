@@ -90,10 +90,10 @@ function HomePage() {
       <div className="homepage-header">
         <Title level={3} style={{ margin: 0 }}>
           <RadarChartOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-          AI 安全态势感知平台
+          智安界
         </Title>
         <span style={{ color: '#999', fontSize: 13 }}>
-          Daily AI security intelligence from across the web
+          智筑防线，安护无界 · AI安全态势感知平台
         </span>
       </div>
 

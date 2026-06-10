@@ -3,7 +3,7 @@ import { Layout, Menu, Button, Space, Dropdown, Avatar, Badge, Typography } from
 import {
   HomeOutlined, LoginOutlined, UserAddOutlined, UserOutlined,
   DashboardOutlined, BellOutlined, SettingOutlined, LogoutOutlined,
-  SafetyCertificateOutlined, BugOutlined, SecurityScanOutlined, LockOutlined,
+  SafetyCertificateOutlined, BugOutlined, LockOutlined,
   RobotOutlined, AlertOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -82,19 +82,28 @@ function TopNavbar() {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        height: 56,
-        lineHeight: '56px',
+        height: 64,
+        lineHeight: '64px',
       }}
     >
       {/* Logo */}
       <div
-        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0, gap: 0 }}
         onClick={() => navigate('/')}
       >
-        <SecurityScanOutlined style={{ fontSize: 22, color: '#1677ff', marginRight: 8 }} />
-        <Text strong style={{ color: '#fff', fontSize: 16, whiteSpace: 'nowrap' }}>
-          AI Security Intel
-        </Text>
+        <img
+          src={process.env.PUBLIC_URL + '/logo-128.png'}
+          alt="智安界"
+          style={{ height: 40, width: 40, objectFit: 'contain' }}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.35, marginLeft: 8 }}>
+          <Text strong style={{ color: '#fff', fontSize: 16, whiteSpace: 'nowrap' }}>
+            智安界
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, whiteSpace: 'nowrap' }}>
+            智筑防线，安护无界
+          </Text>
+        </div>
       </div>
 
       {/* Category Menu */}
