@@ -1,0 +1,6 @@
+{
+  "envId": "security-event-prod-d6b714fe9d15",
+  "cloudrun": {
+    "name": "securityproject"
+  }
+}
