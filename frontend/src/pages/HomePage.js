@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Row, Col, Typography, Divider, Alert, Button, Tag } from 'antd';
-import { RadarChartOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import NewsHeader from '../components/NewsHeader';
 import NewsList from '../components/NewsList';
@@ -87,14 +87,20 @@ function HomePage() {
 
   return (
     <div className="homepage">
-      <div className="homepage-header">
-        <Title level={3} style={{ margin: 0 }}>
-          <RadarChartOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-          智安界
-        </Title>
-        <span style={{ color: '#999', fontSize: 13 }}>
-          智筑防线，安护无界 · AI安全态势感知平台
-        </span>
+      <div className="homepage-header" style={{ alignItems: 'center' }}>
+        <img
+          src={process.env.PUBLIC_URL + '/logo-128.png'}
+          alt="智安界"
+          style={{ height: 36, width: 36, objectFit: 'contain' }}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <Title level={3} style={{ margin: 0 }}>
+            智安界
+          </Title>
+          <span style={{ color: '#999', fontSize: 13 }}>
+            智筑防线，安护无界
+          </span>
+        </div>
       </div>
 
       <Divider style={{ margin: '16px 0' }} />
